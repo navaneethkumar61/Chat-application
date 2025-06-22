@@ -1,56 +1,46 @@
-/* Use a Google Font */
+/* Login screen styling only */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
 }
 
 body {
-  height: 100vh;
-  background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #333;
+  margin: 0;
+  padding: 0;
+  background: #f0f9ff;
+  font-family: 'Poppins', sans-serif;
 }
 
 #login-screen {
-  background: #ffffff;
-  padding: 40px 30px;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  width: 300px;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to right, #e0f7fa, #b2ebf2);
 }
 
 #login-screen h2 {
-  margin-bottom: 20px;
   font-size: 24px;
+  font-weight: 600;
   color: #00796b;
+  margin-bottom: 20px;
 }
 
-#username {
+#login-screen input {
   padding: 10px;
-  width: 100%;
   font-size: 16px;
-  margin-bottom: 20px;
+  width: 200px;
+  margin-bottom: 15px;
   border: 1px solid #ccc;
   border-radius: 8px;
-  transition: border 0.3s ease;
-}
-
-#username:focus {
-  border-color: #00796b;
   outline: none;
 }
 
-#joinBtn {
+#login-screen button {
+  padding: 10px 20px;
   background-color: #00796b;
   color: white;
-  padding: 10px 20px;
   font-size: 15px;
   border: none;
   border-radius: 8px;
@@ -58,9 +48,10 @@ body {
   transition: background 0.3s ease;
 }
 
-#joinBtn:hover {
+#login-screen button:hover {
   background-color: #004d40;
 }
+
 
 
 #chat-screen {
