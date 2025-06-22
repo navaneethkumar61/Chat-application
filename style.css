@@ -1,58 +1,13 @@
-/* Login screen styling only */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
-* {
-  box-sizing: border-box;
-}
-
 body {
+  font-family: Arial, sans-serif;
   margin: 0;
-  padding: 0;
-  background: #f0f9ff;
-  font-family: 'Poppins', sans-serif;
+  background: #f5f5f5;
 }
 
 #login-screen {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(to right, #e0f7fa, #b2ebf2);
+  text-align: center;
+  padding: 100px;
 }
-
-#login-screen h2 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #00796b;
-  margin-bottom: 20px;
-}
-
-#login-screen input {
-  padding: 10px;
-  font-size: 16px;
-  width: 200px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  outline: none;
-}
-
-#login-screen button {
-  padding: 10px 20px;
-  background-color: #00796b;
-  color: white;
-  font-size: 15px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-#login-screen button:hover {
-  background-color: #004d40;
-}
-
-
 
 #chat-screen {
   display: flex;
@@ -129,11 +84,4 @@ body {
   cursor: pointer;
 }
 
-/* emoji-picker {
-  max-height: 150px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  display: block;
-  white-space: nowrap;
-  margin-top: 10px;
-} */
+
