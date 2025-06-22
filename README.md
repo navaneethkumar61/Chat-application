@@ -1,7 +1,8 @@
 # 🗨️ 1-to-1 Real-Time Chat App
 
-A simple real-time private chat application with emoji support and message deletion, built using:
 Live Demo: https://chat-application-s7zn.onrender.com/
+- A simple real-time private chat application with emoji support and message deletion, built using:
+
 ## 🚀 Technologies Used
 - HTML
 - CSS
