@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>1-to-1 Chat App</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+</head>
+<body>
+  <div id="login-screen">
+    <h2>Enter Your Name</h2>
+    <input type="text" id="username" />
+    <button id="joinBtn">Join</button>
+  </div>
+
+  <div id="chat-screen" style="display: none;">
+    <div id="user-list">
+      <h3>Online Users</h3>
+      <ul id="users"></ul>
+    </div>
+    <div id="chat-area">
+      <h3 id="chat-with">Chat with: <span id="receiver-name"></span></h3>
+      <ul id="messages"></ul>
+
+      <emoji-picker id="emoji-picker" style="width: 100%; height: 45%;"></emoji-picker>
+
+      <form id="chat-form">
+        <input id="message" autocomplete="off" placeholder="Type a message..." />
+        <button>Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/socket.io.js"></script>
+<script>
+  const socket = io();
+  let myName = "";
+  let currentReceiver = "";
+
+  const loginScreen = document.getElementById("login-screen");
+  const chatScreen = document.getElementById("chat-screen");
+  const joinBtn = document.getElementById("joinBtn");
+  const usernameInput = document.getElementById("username");
+  const usersList = document.getElementById("users");
+  const receiverNameDisplay = document.getElementById("receiver-name");
+  const messages = document.getElementById("messages");
+  const chatForm = document.getElementById("chat-form");
+  const messageInput = document.getElementById("message");
+  const emojiPicker = document.getElementById("emoji-picker");
+
+  emojiPicker.addEventListener("emoji-click", event => {
+    messageInput.value += event.detail.unicode;
+  });
+
+  joinBtn.onclick = () => {
+    const username = usernameInput.value.trim();
+    if (username) {
+      myName = username;
+      socket.emit("register", username);
+      loginScreen.style.display = "none";
+      chatScreen.style.display = "flex";
+    }
+  };
+
+  socket.on("user-list", (users) => {
+    usersList.innerHTML = "";
+    users.forEach((user) => {
+      if (user !== myName) {
+        const li = document.createElement("li");
+        li.textContent = user;
+        li.onclick = () => {
+          currentReceiver = user;
+          receiverNameDisplay.textContent = user;
+          messages.innerHTML = "";
+          localStorage.setItem("lastReceiver", user);
+          socket.emit("load-history", { withUser: user });
+        };
+        usersList.appendChild(li);
+      }
+    });
+
+    const lastReceiver = localStorage.getItem("lastReceiver");
+    if (lastReceiver && users.includes(lastReceiver)) {
+      currentReceiver = lastReceiver;
+      receiverNameDisplay.textContent = lastReceiver;
+      messages.innerHTML = "";
+      socket.emit("load-history", { withUser: lastReceiver });
+    }
+  });
+
+  chatForm.onsubmit = (e) => {
+    e.preventDefault();
+    if (currentReceiver && messageInput.value.trim()) {
+      const text = messageInput.value.trim();
+      const time = new Date().toLocaleTimeString();
+      const msg = {
+        from: myName,
+        to: currentReceiver,
+        message: `[${time}] ${myName}: ${text}`,
+        msgId: Date.now().toString()
+      };
+
+      socket.emit("private-message", msg);
+      addMessageToUI(msg.message, msg.msgId); // sender view
+      messageInput.value = "";
+    }
+  };
+
+  socket.on("private-message", (msg) => {
+    if (msg.from === currentReceiver) {
+      addMessageToUI(msg.message, msg.msgId); // receiver view
+    }
+  });
+
+  socket.on("load-history", (history) => {
+    messages.innerHTML = "";
+    history.forEach((msg) => {
+      addMessageToUI(msg.message, msg.msgId);
+    });
+  });
+
+  function addMessageToUI(text, msgId) {
+    const item = document.createElement("li");
+    item.textContent = text;
+    item.setAttribute("data-id", msgId);
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "🗑️";
+    delBtn.style.marginLeft = "10px";
+    delBtn.onclick = () => {
+      item.remove(); // delete only locally
+    };
+    item.appendChild(delBtn);
+
+    messages.appendChild(item);
+  }
+</script>
+
+</body>
+</html>
