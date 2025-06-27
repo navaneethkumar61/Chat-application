@@ -16,17 +16,22 @@
     <div id="user-list">
       <h3>Online Users</h3>
       <ul id="users"></ul>
+      <h3 style="margin-top:30px;">Previous Chats</h3>
+      <ul id="previous-chats"></ul>
     </div>
     <div id="chat-area">
       <h3 id="chat-with">Chat with: <span id="receiver-name"></span></h3>
       <ul id="messages"></ul>
-
-      <emoji-picker id="emoji-picker" style="width: 100%; height: 45%;"></emoji-picker>
-
-      <form id="chat-form">
-        <input id="message" autocomplete="off" placeholder="Type a message..." />
-        <button>Send</button>
-      </form>
+      <div style="display: flex; align-items: center;">
+        <button id="emoji-btn" type="button" style="font-size: 1.5rem; margin-right: 8px; background: none; border: none; cursor: pointer;">😊</button>
+        <form id="chat-form" style="flex:1; display:flex;">
+          <input id="message" autocomplete="off" placeholder="Type a message..." />
+          <button>Send</button>
+        </form>
+      </div>
+      <div id="emoji-popup" style="display:none; position:absolute; z-index:100; right:40px; bottom:120px; background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        <emoji-picker id="emoji-picker" style="width: 220px; height: 220px;"></emoji-picker>
+      </div>
     </div>
   </div>
 
@@ -46,6 +51,9 @@
   const chatForm = document.getElementById("chat-form");
   const messageInput = document.getElementById("message");
   const emojiPicker = document.getElementById("emoji-picker");
+  const previousChatsList = document.getElementById("previous-chats");
+  const emojiBtn = document.getElementById("emoji-btn");
+  const emojiPopup = document.getElementById("emoji-popup");
 
   emojiPicker.addEventListener("emoji-click", event => {
     messageInput.value += event.detail.unicode;
@@ -58,6 +66,10 @@
       socket.emit("register", username);
       loginScreen.style.display = "none";
       chatScreen.style.display = "flex";
+      updatePreviousChats();
+      receiverNameDisplay.textContent = "";
+      messages.innerHTML = "";
+      currentReceiver = "";
     }
   };
 
@@ -73,18 +85,15 @@
           messages.innerHTML = "";
           localStorage.setItem("lastReceiver", user);
           socket.emit("load-history", { withUser: user });
+          loadLocalHistory(myName, user);
         };
         usersList.appendChild(li);
       }
     });
-
-    const lastReceiver = localStorage.getItem("lastReceiver");
-    if (lastReceiver && users.includes(lastReceiver)) {
-      currentReceiver = lastReceiver;
-      receiverNameDisplay.textContent = lastReceiver;
-      messages.innerHTML = "";
-      socket.emit("load-history", { withUser: lastReceiver });
-    }
+    updatePreviousChats();
+    receiverNameDisplay.textContent = "";
+    messages.innerHTML = "";
+    currentReceiver = "";
   });
 
   chatForm.onsubmit = (e) => {
@@ -98,16 +107,20 @@
         message: `[${time}] ${myName}: ${text}`,
         msgId: Date.now().toString()
       };
-
       socket.emit("private-message", msg);
       addMessageToUI(msg.message, msg.msgId); // sender view
+      saveLocalHistory(myName, currentReceiver, msg);
+      localStorage.setItem("lastReceiver", currentReceiver);
       messageInput.value = "";
+      updatePreviousChats();
     }
   };
 
   socket.on("private-message", (msg) => {
     if (msg.from === currentReceiver) {
       addMessageToUI(msg.message, msg.msgId); // receiver view
+      saveLocalHistory(myName, currentReceiver, msg);
+      updatePreviousChats();
     }
   });
 
@@ -115,24 +128,85 @@
     messages.innerHTML = "";
     history.forEach((msg) => {
       addMessageToUI(msg.message, msg.msgId);
+      saveLocalHistory(myName, currentReceiver, msg);
     });
+    updatePreviousChats();
   });
 
   function addMessageToUI(text, msgId) {
     const item = document.createElement("li");
     item.textContent = text;
     item.setAttribute("data-id", msgId);
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑️";
-    delBtn.style.marginLeft = "10px";
-    delBtn.onclick = () => {
-      item.remove(); // delete only locally
-    };
-    item.appendChild(delBtn);
-
     messages.appendChild(item);
   }
+
+  // --- LocalStorage chat history helpers ---
+  function getHistoryKey(userA, userB) {
+    return `chat-history-${[userA, userB].sort().join("|")}`;
+  }
+
+  function saveLocalHistory(userA, userB, msg) {
+    const key = getHistoryKey(userA, userB);
+    let history = JSON.parse(localStorage.getItem(key) || "[]");
+    if (!history.find(m => m.msgId === msg.msgId)) {
+      history.push(msg);
+      localStorage.setItem(key, JSON.stringify(history));
+    }
+  }
+
+  function loadLocalHistory(userA, userB) {
+    const key = getHistoryKey(userA, userB);
+    const history = JSON.parse(localStorage.getItem(key) || "[]");
+    messages.innerHTML = "";
+    history.forEach(msg => addMessageToUI(msg.message, msg.msgId));
+  }
+
+  function removeLocalMessage(userA, userB, msgId) {
+    const key = getHistoryKey(userA, userB);
+    let history = JSON.parse(localStorage.getItem(key) || "[]");
+    history = history.filter(m => m.msgId !== msgId);
+    localStorage.setItem(key, JSON.stringify(history));
+  }
+
+  // --- Previous Chats UI ---
+  function updatePreviousChats() {
+    previousChatsList.innerHTML = "";
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith("chat-history-"));
+    const contacts = new Set();
+    allKeys.forEach(key => {
+      const [userA, userB] = key.replace("chat-history-", "").split("|");
+      if (userA === myName) contacts.add(userB);
+      if (userB === myName) contacts.add(userA);
+    });
+    contacts.delete(myName);
+    contacts.forEach(contact => {
+      const li = document.createElement("li");
+      li.textContent = contact;
+      li.style.cursor = "pointer";
+      li.onclick = () => {
+        currentReceiver = contact;
+        receiverNameDisplay.textContent = contact;
+        loadLocalHistory(myName, contact);
+        localStorage.setItem("lastReceiver", contact);
+      };
+      previousChatsList.appendChild(li);
+    });
+  }
+
+  // --- Emoji Picker Popup ---
+  emojiBtn.onclick = (e) => {
+    e.stopPropagation();
+    emojiPopup.style.display = emojiPopup.style.display === "none" ? "block" : "none";
+  };
+  document.addEventListener("click", (e) => {
+    if (!emojiPopup.contains(e.target) && e.target !== emojiBtn) {
+      emojiPopup.style.display = "none";
+    }
+  });
+  emojiPicker.addEventListener("emoji-click", event => {
+    messageInput.value += event.detail.unicode;
+    emojiPopup.style.display = "none";
+  });
 </script>
 
 </body>
